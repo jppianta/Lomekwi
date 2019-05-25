@@ -22,3 +22,5 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 lomekwi-*.tar
 
+# Ignore files used for test purpose
+/test/mock_components/
