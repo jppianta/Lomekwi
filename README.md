@@ -1,4 +1,4 @@
-<img src="./assets/lomekwi_side.png" alt="drawing" style="height:200px;"/>
+<img src="./assets/lomekwi_side.png" alt="drawing" style="height:150px;"/>
 
 <!-- You could think Lomekwi as a public distributed artifact system, but best way to describe Lomekwi is with a little story.
 
