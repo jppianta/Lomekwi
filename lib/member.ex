@@ -1,5 +1,12 @@
 defmodule Member do
+  @moduledoc """
+    Create intances to manage file and artifacts
+  """
+
   require Logger
+  @doc """
+    Instantiates a new Member exposing just splitFile and mountFile functions
+  """
   def new(key, baseDir) do
     %{
       :splitFile => splitFile(key, baseDir),
@@ -7,6 +14,7 @@ defmodule Member do
     }
   end
 
+  # Returns a function that cryptographs the file and splits the file into artifacts
   defp splitFile(key, baseDir) do
     fn fileName ->
       completeFileName = baseDir <> fileName
@@ -25,6 +33,7 @@ defmodule Member do
     end
   end
 
+  # Creates an artifact with fileName and content
   defp createArtifact(fileName, baseDir, part, content) do
     newFileName = to_string(part) <> "__" <> fileName <> ".ats"
     completeFileName = baseDir <> newFileName
@@ -37,6 +46,7 @@ defmodule Member do
     end
   end
 
+  # Returns a function that search for the artifacts of a file, mounts them into a file and decryptographs it
   defp mountFile(key, baseDir) do
     fn fileNam ->
       info = findArtifacts(fileNam, baseDir)
@@ -75,6 +85,7 @@ defmodule Member do
     end
   end
 
+  # List all artifacts of a fileName on a folder
   defp findArtifacts(fileName, dirPath) do
     {:ok, files} = File.ls(dirPath)
 
@@ -110,10 +121,12 @@ defmodule Member do
     }
   end
 
+  # Verifies if file is an artifact
   defp artifact?(file) do
     String.ends_with?(file, ".ats")
   end
 
+  # Get slice, fileName and artifactName of an artifact
   defp getArtifactDetails(art) do
     pattern = :binary.compile_pattern(["__", ".ats"])
     [slice | fileName] = String.split(art, pattern)

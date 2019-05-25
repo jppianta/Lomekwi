@@ -1,10 +1,16 @@
-require Member
-
 defmodule Lomekwi do
+  @moduledoc """
+    Manages Key and Member constructions
+  """
+
+  @doc """
+    Instantiates a new Member using the baseDir and the existing/generated key
+  """
   def init(baseDir) do
     Member.new(generateKey(baseDir), baseDir)
   end
 
+  # Uses the baseDir to verify if a file with a key already exists. If not, creates one and stores it into a file
   defp generateKey(baseDir) do
     keyFileName = baseDir <> "key.bin"
 
