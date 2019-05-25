@@ -1,9 +1,9 @@
-defmodule Lomewaki.MixProject do
+defmodule Lomekwi.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :lomewaki,
+      app: :lomekwi,
       version: "0.1.0",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
