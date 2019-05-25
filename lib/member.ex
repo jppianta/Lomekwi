@@ -1,4 +1,5 @@
 defmodule Member do
+  require Logger
   def new(key, baseDir) do
     %{
       :splitFile => splitFile(key, baseDir),
@@ -31,7 +32,7 @@ defmodule Member do
     case File.open(completeFileName, [:binary, :write]) do
       {:ok, file} ->
         IO.binwrite(file, content)
-        IO.puts("Arifact #{newFileName} created")
+        Logger.info("Arifact #{newFileName} created")
         File.close(file)
     end
   end
@@ -39,10 +40,10 @@ defmodule Member do
   defp mountFile(key, baseDir) do
     fn fileNam ->
       info = findArtifacts(fileNam, baseDir)
-      vectorFileName = info.vector.artifactName
-      fileNames = Enum.map(info.artifacts, fn art -> art.artifactName end)
+      vectorFileName = baseDir <> info.vector.artifactName
+      fileNames = Enum.map(info.artifacts, fn art -> baseDir <> art.artifactName end)
 
-      case File.open(fileNam, [:binary, :write]) do
+      case File.open(baseDir <> fileNam, [:binary, :write]) do
         {:ok, file} ->
           data =
             Enum.reduce(fileNames, <<>>, fn fileName, currData ->
@@ -50,8 +51,12 @@ defmodule Member do
                 {:ok, artifact} ->
                   d = IO.binread(artifact, :all)
                   File.close(artifact)
-                  IO.puts("Artifact #{fileName} read")
+                  Logger.info("Artifact #{fileName} read")
                   currData <> d
+
+                {:error, err} ->
+                  Logger.info("#{fileName} #{err}")
+                  currData
               end
             end)
 
