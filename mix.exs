@@ -12,7 +12,8 @@ defmodule Lomekwi.MixProject do
       name: "Lomekwi",
       source_url: "https://github.com/jppianta/Lomekwi",
       docs: [
-        main: "Lomekwi", # The main page in the docs
+        # The main page in the docs
+        main: "Lomekwi",
         logo: "assets/lomekwi_no_name.png",
         extras: ["README.md"]
       ]

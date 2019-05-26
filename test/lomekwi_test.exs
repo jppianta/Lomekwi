@@ -7,11 +7,15 @@ defmodule LomekwiTest do
   end
 
   defp initMember do
-    Lomekwi.init(mockComponentFolder())
+    Lomekwi.init(%{})
+  end
+
+  defp clearFiles do
+    File.rm_rf(mockComponentFolder() <> ".")
   end
 
   defp mountComponents do
-    File.rm_rf(mockComponentFolder() <> ".")
+    clearFiles()
     filePath = mockComponentFolder() <> "inputFile.txt"
     File.write(filePath, "Eu amo a Ianinha")
   end
@@ -23,6 +27,7 @@ defmodule LomekwiTest do
     data = MemberTest.findArtifacts("inputFile.txt", mockComponentFolder())
     assert data.vector != nil
     assert length(data.artifacts) == 2
+    clearFiles()
   end
 
   test "mountFile" do
@@ -34,5 +39,6 @@ defmodule LomekwiTest do
     member.mountFile.("inputFile.txt")
     {:ok, content} = File.read(filePath)
     assert content == "Eu amo a Ianinha"
+    clearFiles()
   end
 end
