@@ -4,30 +4,41 @@ defmodule Member do
   """
 
   require Logger
+
   @doc """
     Instantiates a new Member exposing just splitFile and mountFile functions
   """
-  def new(key, baseDir) do
-    %{
-      :splitFile => splitFile(key, baseDir),
-      :mountFile => mountFile(key, baseDir)
-    }
+  def new(config) do
+    if (config.key == nil) do
+      {:error, "Key must be defined"}
+    else
+      %{
+        :splitFile => splitFile(config.key, config.baseDir, config.artifactSize),
+        :mountFile => mountFile(config.key, config.baseDir)
+      }
+    end
   end
 
   # Returns a function that cryptographs the file and splits the file into artifacts
-  defp splitFile(key, baseDir) do
+  defp splitFile(key, baseDir, artifactSize) do
     fn fileName ->
       completeFileName = baseDir <> fileName
       {:ok, file} = File.open(completeFileName, [:binary, :read])
       data = IO.binread(file, :all)
       {:ok, {init_vector, cipher_text}} = ExCrypto.encrypt(key, data)
       size = div(bit_size(cipher_text), 8)
-      half = div(size, 2)
-      rest = rem(size, 2)
-      data1 = binary_part(cipher_text, 0, half)
-      data2 = binary_part(cipher_text, half, half + rest)
-      createArtifact(fileName, baseDir, 0, data1)
-      createArtifact(fileName, baseDir, 1, data2)
+      parts = div(size, artifactSize)
+      if parts > 0 do
+        Enum.each(0..(parts - 1), fn part ->
+          partData = binary_part(cipher_text, part * artifactSize, artifactSize)
+          createArtifact(fileName, baseDir, part, partData)
+        end)
+      end
+      rest = rem(size, artifactSize)
+      if rest > 0 do
+        partData = binary_part(cipher_text, size - rest, rest)
+        createArtifact(fileName, baseDir, parts, partData)
+      end
       createArtifact(fileName, baseDir, "vector", init_vector)
       File.close(file)
     end
@@ -41,7 +52,7 @@ defmodule Member do
     case File.open(completeFileName, [:binary, :write]) do
       {:ok, file} ->
         IO.binwrite(file, content)
-        Logger.info("Arifact #{newFileName} created")
+        Logger.info("Arifact #{completeFileName} created")
         File.close(file)
     end
   end

@@ -6,8 +6,10 @@ defmodule Lomekwi do
   @doc """
     Instantiates a new Member using the baseDir and the existing/generated key
   """
-  def init(baseDir) do
-    Member.new(generateKey(baseDir), baseDir)
+  def init(config) do
+    conf = Map.merge(LomekwiConfig.config(), config)
+    conf = Map.merge(conf, %{:key => generateKey(conf.baseDir)})
+    Member.new(conf)
   end
 
   # Uses the baseDir to verify if a file with a key already exists. If not, creates one and stores it into a file
