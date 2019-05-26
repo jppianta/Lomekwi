@@ -24,3 +24,6 @@ lomekwi-*.tar
 
 # Ignore files used for test purpose
 /test/mock_components/
+
+# Ignore .DS_Store
+*.DS_Store
