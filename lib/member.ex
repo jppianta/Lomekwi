@@ -9,101 +9,66 @@ defmodule Member do
     Instantiates a new Member exposing just splitFile and mountFile functions
   """
   def new(config) do
-    if (config.key == nil) do
+    if config.key == nil do
       {:error, "Key must be defined"}
     else
       %{
-        :splitFile => splitFile(config.key, config.baseDir, config.artifactSize),
-        :mountFile => mountFile(config.key, config.baseDir)
+        :splitFile => splitFile(config.key, config.artifactSize),
+        :findArtifacts => findArtifacts(config.baseDir),
+        :baseDir => config.baseDir
       }
     end
   end
 
   # Returns a function that cryptographs the file and splits the file into artifacts
-  defp splitFile(key, baseDir, artifactSize) do
-    fn fileName ->
-      completeFileName = baseDir <> fileName
-      {:ok, file} = File.open(completeFileName, [:binary, :read])
+  defp splitFile(key, artifactSize) do
+    fn fileName, baseDir ->
+      filePath = baseDir <> fileName
+      {:ok, file} = File.open(filePath, [:binary, :read])
       data = IO.binread(file, :all)
+      File.close(file)
       {:ok, {init_vector, cipher_text}} = ExCrypto.encrypt(key, data)
       size = div(bit_size(cipher_text), 8)
       parts = div(size, artifactSize)
-      if parts > 0 do
-        Enum.each(0..(parts - 1), fn part ->
-          partData = binary_part(cipher_text, part * artifactSize, artifactSize)
-          createArtifact(fileName, baseDir, part, partData)
-        end)
-      end
       rest = rem(size, artifactSize)
-      if rest > 0 do
-        partData = binary_part(cipher_text, size - rest, rest)
-        createArtifact(fileName, baseDir, parts, partData)
-      end
-      createArtifact(fileName, baseDir, "vector", init_vector)
-      File.close(file)
+
+      artifacts =
+        splitParts(parts, cipher_text, artifactSize, fileName) ++
+          splitRest(rest, cipher_text, fileName, size, parts)
+
+      artifacts ++ [%{:fileName => fileName, :content => init_vector, :part => "vector"}]
     end
   end
 
-  # Creates an artifact with fileName and content
-  defp createArtifact(fileName, baseDir, part, content) do
-    newFileName = to_string(part) <> "__" <> fileName <> ".ats"
-    completeFileName = baseDir <> newFileName
-
-    case File.open(completeFileName, [:binary, :write]) do
-      {:ok, file} ->
-        IO.binwrite(file, content)
-        Logger.info("Arifact #{completeFileName} created")
-        File.close(file)
+  defp splitParts(parts, content, artifactSize, fileName) do
+    if parts > 0 do
+      Enum.map(0..(parts - 1), fn part ->
+        partData = binary_part(content, part * artifactSize, artifactSize)
+        %{:fileName => fileName, :content => partData, :part => to_string(part)}
+      end)
+    else
+      []
     end
   end
 
-  # Returns a function that search for the artifacts of a file, mounts them into a file and decryptographs it
-  defp mountFile(key, baseDir) do
-    fn fileNam ->
-      info = findArtifacts(fileNam, baseDir)
-      vectorFileName = baseDir <> info.vector.artifactName
-      fileNames = Enum.map(info.artifacts, fn art -> baseDir <> art.artifactName end)
-
-      case File.open(baseDir <> fileNam, [:binary, :write]) do
-        {:ok, file} ->
-          data =
-            Enum.reduce(fileNames, <<>>, fn fileName, currData ->
-              case File.open(fileName, [:binary, :read]) do
-                {:ok, artifact} ->
-                  d = IO.binread(artifact, :all)
-                  File.close(artifact)
-                  Logger.info("Artifact #{fileName} read")
-                  currData <> d
-
-                {:error, err} ->
-                  Logger.info("#{fileName} #{err}")
-                  currData
-              end
-            end)
-
-          case File.open(vectorFileName, [:binary, :read]) do
-            {:ok, vectorFile} ->
-              init_vector = IO.binread(vectorFile, :all)
-
-              case ExCrypto.decrypt(key, init_vector, data) do
-                {:ok, decData} ->
-                  IO.binwrite(file, decData)
-              end
-          end
-
-          File.close(file)
-      end
+  defp splitRest(rest, content, fileName, size, part) do
+    if rest > 0 do
+      partData = binary_part(content, size - rest, rest)
+      [%{:fileName => fileName, :content => partData, :part => to_string(part)}]
+    else
+      []
     end
   end
 
   # List all artifacts of a fileName on a folder
-  defp findArtifacts(fileName, dirPath) do
-    {:ok, files} = File.ls(dirPath)
+  defp findArtifacts(baseDir) do
+    fn fileName ->
+      {:ok, files} = File.ls(baseDir)
 
-    data =
       Enum.reduce(files, %{:vector => nil, :artifacts => []}, fn file, currData ->
         if not File.dir?(file) and artifact?(file) do
-          artifact = getArtifactDetails(file)
+          Logger.info("Artifact Found: #{file}")
+          artifact = getArtifactDetails(file, baseDir)
 
           if artifact.fileName == fileName do
             if artifact.slice === "vector" do
@@ -124,12 +89,7 @@ defmodule Member do
           currData
         end
       end)
-
-    %{
-      :artifacts =>
-        Enum.sort(data.artifacts, &(String.to_integer(&1.slice) <= String.to_integer(&2.slice))),
-      :vector => data.vector
-    }
+    end
   end
 
   # Verifies if file is an artifact
@@ -138,14 +98,21 @@ defmodule Member do
   end
 
   # Get slice, fileName and artifactName of an artifact
-  defp getArtifactDetails(art) do
+  defp getArtifactDetails(art, baseDir) do
     pattern = :binary.compile_pattern(["__", ".ats"])
     [slice | fileName] = String.split(art, pattern)
 
-    %{
-      :slice => slice,
-      :fileName => List.to_string(fileName),
-      :artifactName => art
-    }
+    case File.open(baseDir <> art, [:binary, :read]) do
+      {:ok, artifact} ->
+        data = IO.binread(artifact, :all)
+        File.close(artifact)
+
+        %{
+          :slice => slice,
+          :fileName => List.to_string(fileName),
+          :artifactName => art,
+          :content => data
+        }
+    end
   end
 end
