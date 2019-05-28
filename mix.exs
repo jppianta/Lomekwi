@@ -23,8 +23,7 @@ defmodule Lomekwi.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
-      mod: {MemberApp, []}
+      extra_applications: [:logger, :cowboy, :plug, :jason]
     ]
   end
 
@@ -32,9 +31,14 @@ defmodule Lomekwi.MixProject do
   defp deps do
     [
       {:ex_crypto, "~> 0.10.0"},
+      {:plug_cowboy, "~> 2.0"},
+      {:plug, "~> 1.8"},
+      {:jason, "~> 1.1"},
+      {:uuid, "~> 1.1"},
+      {:poison, "~> 4.0"},
+      {:httpoison, "~> 1.5"},
+      {:binary, "~> 0.0.5"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
 end

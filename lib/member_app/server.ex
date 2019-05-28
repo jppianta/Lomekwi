@@ -1,40 +1,63 @@
-defmodule MemberApp.Server do
+defmodule MemberApp.Router do
+  use Plug.Router
+  use Plug.ErrorHandler
+  use Plug.Debugger
+  require UUID
   require Logger
+  plug(Plug.Logger, log: :debug)
 
-  def accept(port) do
-    # The options below mean:
-    #
-    # 1. `:binary` - receives data as binaries (instead of lists)
-    # 2. `packet: :line` - receives data line by line
-    # 3. `active: false` - blocks on `:gen_tcp.recv/2` until data is available
-    # 4. `reuseaddr: true` - allows us to reuse the address if the listener crashes
-    #
-    {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: :raw, active: false, reuseaddr: true])
-    Logger.info("Accepting connections on port #{port}")
-    loop_acceptor(socket)
+  plug(:match)
+
+  plug(:dispatch)
+
+  post "/new_member" do
+    {:ok, body, conn} = read_body(conn)
+
+    body = Jason.decode!(body)
+
+    key = UUID.uuid4()
+
+    config = Map.merge(%{:addrs => "localhost"}, body)
+
+    FileManager.new_member(key, config)
+
+    send_resp(conn, 201, "created: #{get_in(body, ["message"])}")
   end
 
-  defp loop_acceptor(socket) do
-    {:ok, client} = :gen_tcp.accept(socket)
-    {:ok, pid} = Task.Supervisor.start_child(MemberApp.TaskSupervisor, fn -> serve(client) end)
-    :ok = :gen_tcp.controlling_process(client, pid)
-    loop_acceptor(socket)
+  post "/save_artifact" do
+    Logger.info("Start Save Artifact")
+
+    {:ok, body, req0} = read_body(conn)
+
+    artifact = %{
+      :fileName => binary_part(body, 0, 32) |> parseName() |> to_string(),
+      :slice => binary_part(body, 32, 16) |> parseName() |> parseSlice(),
+      :content => binary_part(body, 50, div(bit_size(body), 8) - 50)
+    }
+
+    IO.inspect(artifact)
+    send_resp(conn, 404, "End Save Artifact")
   end
 
-  defp serve(socket) do
-    socket
-    |> read_line()
-    |> write_line(socket)
-
-    serve(socket)
+  defp parseName(bits) do
+    bits |> Binary.trim_trailing()
   end
 
-  defp read_line(socket) do
-    {:ok, data} = :gen_tcp.recv(socket, 0)
-    data
+  defp parseSlice(slice) do
+    try do
+      String.to_integer(slice)
+    rescue
+      ArgumentError -> slice
+    end
   end
 
-  defp write_line(line, socket) do
-    :gen_tcp.send(socket, line)
+  def handle_errors(conn, %{kind: _kind, reason: _reason, stack: _stack}) do
+    send_resp(conn, conn.status, "Something went wrong")
+  end
+
+  # "Default" route that will get called when no other route is matched
+
+  match _ do
+    send_resp(conn, 404, "not found")
   end
 end

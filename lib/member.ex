@@ -15,9 +15,39 @@ defmodule Member do
       %{
         :splitFile => splitFile(config.key, config.artifactSize),
         :findArtifacts => findArtifacts(config.baseDir),
+        :save_artifact => save_artifact(config.addrs),
         :baseDir => config.baseDir
       }
     end
+  end
+
+  defp save_artifact(addrs) do
+    fn artifact ->
+      message =
+        encondeName(artifact.fileName, 32) <> encondeName(artifact.part, 16) <> artifact.content
+
+      case HTTPoison.post("localhost:8085/save_artifact", message, [], []) do
+        {:ok, _conn} ->
+          :ok
+
+        {:error, _conn} ->
+          :error
+      end
+    end
+  end
+
+  defp encondeName(name, size) do
+    content = to_charlist(name)
+
+    Enum.reduce(0..(size - 1), <<>>, fn idx, acc ->
+      char = Enum.at(content, idx)
+
+      if char == nil do
+        acc <> <<0>>
+      else
+        acc <> <<char>>
+      end
+    end)
   end
 
   # Returns a function that cryptographs the file and splits the file into artifacts
