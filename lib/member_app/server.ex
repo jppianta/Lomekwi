@@ -27,7 +27,7 @@ defmodule MemberApp.Router do
   post "/save_artifact" do
     Logger.info("Start Save Artifact")
 
-    {:ok, body, req0} = read_body(conn)
+    {:ok, body, _req0} = read_body(conn)
 
     artifact = %{
       :fileName => binary_part(body, 0, 32) |> parseName() |> to_string(),
@@ -35,7 +35,7 @@ defmodule MemberApp.Router do
       :content => binary_part(body, 50, div(bit_size(body), 8) - 50)
     }
 
-    IO.inspect(artifact)
+    FileManager.save_artifact(artifact)
     send_resp(conn, 404, "End Save Artifact")
   end
 

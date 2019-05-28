@@ -6,12 +6,29 @@ defmodule FileManager do
   use Agent
   require Logger
 
-  def init do
-    start_link(%{})
+  def new_system(config) do
+    key = generateKey()
+    File.write(config.base_dir <> "key.bin", key, [:binary])
+    start_link(key, config.base_dir)
   end
 
-  defp start_link(_opts) do
-    Agent.start_link(fn -> %{:system_key => nil, :members => %{}} end, name: __MODULE__)
+  # def join_system(config, system_member_ip) do
+    
+  # end
+
+  defp start_link(key, base_dir) do
+    self_ip = get_self_ip()
+    Agent.start_link(fn -> %{:ip => self_ip, :base_dir => base_dir, :system_key => key, :members => %{}} end, name: __MODULE__)
+  end
+
+  defp get_self_ip do
+    {:ok, ifs} = :inet.getif()
+    Enum.at(ifs, 0) |> elem(0) |> Tuple.to_list() |> Enum.join(".")
+  end
+
+  def save_artifact(artifact) do
+    path = get_base_dir() <> to_string(artifact.slice) <> "__" <> artifact.fileName <> ".ats"
+    File.write(path, artifact.content)
   end
 
   def handle_info({:EXIT, _pid, _reason}, state) do
@@ -84,13 +101,6 @@ defmodule FileManager do
     Instantiates a new Member using the baseDir and the existing/generated key
   """
   def new_member(key, config) do
-    systemKey = getSystemKey()
-
-    if systemKey == nil do
-      newKey = generateKey()
-      Agent.update(__MODULE__, &Map.put(&1, :system_key, newKey))
-    end
-
     conf = Map.merge(LomekwiConfig.config(), config)
     conf = Map.merge(conf, %{:key => getSystemKey()})
     Logger.info("Member Added: #{key}")
@@ -98,6 +108,8 @@ defmodule FileManager do
 
     Agent.update(__MODULE__, fn state ->
       %{
+        :ip => state.ip,
+        :base_dir => state.base_dir,
         :system_key => state.system_key,
         :members => Map.put(state.members, key, Member.new(conf))
       }
@@ -131,8 +143,16 @@ defmodule FileManager do
     # end
   end
 
-  defp getSystemKey do
+  def getSystemKey do
     Agent.get(__MODULE__, & &1.system_key)
+  end
+
+  def get_base_dir do
+    Agent.get(__MODULE__, & &1.base_dir)
+  end
+
+  def get_IP do
+    Agent.get(__MODULE__, & &1.ip)
   end
 
   def getMembers do

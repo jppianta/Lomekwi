@@ -7,7 +7,7 @@ defmodule Lomekwi do
   require Logger
 
   def init do
-    FileManager.init()
+    FileManager.new_system(%{:base_dir => "./test/mock_components/"})
     start_server()
   end
 
