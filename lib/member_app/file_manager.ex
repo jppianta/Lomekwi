@@ -80,62 +80,163 @@ defmodule FileManager do
   @doc """
     Gets a value from the `bucket` by `key` and splits the member file
   """
-  def splitFile(key, fileName, fileDir) do
-    member = Agent.get(__MODULE__, &Map.get(&1.members, key))
-
-    Enum.each(member.splitFile.(fileName, fileDir), fn artifact ->
+  def splitFile(fileName, baseDir \\ get_base_dir()) do
+    Enum.each(split(fileName, baseDir), fn artifact ->
       createArtifact(artifact)
     end)
   end
 
-  def testSplit(key) do
-    splitFile(key, "inputFile.txt", "./test/mock_components/")
+  defp split(fileName, baseDir) do
+    filePath = baseDir <> fileName
+    {:ok, file} = File.open(filePath, [:binary, :read])
+    data = IO.binread(file, :all)
+    File.close(file)
+    {:ok, {init_vector, cipher_text}} = ExCrypto.encrypt(getSystemKey(), data)
+    size = byte_size(cipher_text)
+    parts = div(size, getArtifactSize())
+    rest = rem(size, getArtifactSize())
+
+    artifacts =
+      splitParts(parts, cipher_text, fileName) ++
+        splitRest(rest, cipher_text, fileName, size, parts)
+
+    artifacts ++ [%{:fileName => fileName, :content => init_vector, :part => "vector"}]
   end
 
-  defp findArtifacts(fileName) do
-    arts =
-      getMembersValues()
-      |> Enum.reduce(%{:vector => nil, :artifacts => []}, fn member, currData ->
-        artifacts = member.findArtifacts.(fileName)
-
-        if artifacts.vector != nil do
-          %{
-            :vector => artifacts.vector,
-            :artifacts => currData.artifacts ++ artifacts.artifacts
-          }
-        else
-          %{
-            :vector => currData.vector,
-            :artifacts => currData.artifacts ++ artifacts.artifacts
-          }
-        end
+  defp splitParts(parts, content, fileName) do
+    if parts > 0 do
+      Enum.map(0..(parts - 1), fn part ->
+        partData = binary_part(content, part * getArtifactSize(), getArtifactSize())
+        %{:fileName => fileName, :content => partData, :part => to_string(part)}
       end)
+    else
+      []
+    end
+  end
 
-    %{
-      :vector => arts.vector,
-      :artifacts =>
-        Enum.sort(arts.artifacts, &(String.to_integer(&1.slice) < String.to_integer(&2.slice)))
-    }
+  defp splitRest(rest, content, fileName, size, part) do
+    if rest > 0 do
+      partData = binary_part(content, size - rest, rest)
+      [%{:fileName => fileName, :content => partData, :part => to_string(part)}]
+    else
+      []
+    end
+  end
+
+  def testSplit do
+    splitFile("inputFile.txt")
+  end
+
+  def findArtifacts(fileName, send_to) do
+    {:ok, files} = File.ls(get_base_dir())
+
+    Enum.each(files, fn file ->
+      if not File.dir?(file) and artifact?(file) do
+        artifact = getArtifactDetails(file, get_base_dir())
+        
+        if artifact.fileName == fileName do
+          Logger.info("Artifact Found: #{file}")
+          message =
+            encondeName(artifact.fileName, 32) <>
+              encondeName(artifact.slice, 16) <> artifact.content
+
+          case HTTPoison.post(send_to <> ":8085/receive_artifact", message) do
+            {:ok, _conn} ->
+              Logger.info("Artifact Sent: #{file}")
+
+            {:error, _conn} ->
+              :error
+          end
+        end
+      end
+    end)
+
+    case HTTPoison.post(
+           send_to <> ":8085/sent_all_artifact",
+           Jason.encode!(%{:ip => get_IP()})
+         ) do
+      {:ok, _conn} ->
+        :ok
+
+      {:error, _conn} ->
+        :error
+    end
+  end
+
+  defp encondeName(name, size) do
+    content = to_charlist(name)
+
+    Enum.reduce(0..(size - 1), <<>>, fn idx, acc ->
+      char = Enum.at(content, idx)
+
+      if char == nil do
+        acc <> <<0>>
+      else
+        acc <> <<char>>
+      end
+    end)
+  end
+
+  # Verifies if file is an artifact
+  defp artifact?(file) do
+    String.ends_with?(file, ".ats")
+  end
+
+  # Get slice, fileName and artifactName of an artifact
+  defp getArtifactDetails(art, baseDir) do
+    pattern = :binary.compile_pattern(["__", ".ats"])
+    [slice | fileName] = String.split(art, pattern)
+
+    case File.open(baseDir <> art, [:binary, :read]) do
+      {:ok, artifact} ->
+        data = IO.binread(artifact, :all)
+        File.close(artifact)
+
+        %{
+          :slice => slice,
+          :fileName => List.to_string(fileName),
+          :artifactName => art,
+          :content => data
+        }
+    end
   end
 
   def mountFile(fileName, newFilePath) do
-    case File.open(newFilePath, [:binary, :write]) do
-      {:ok, file} ->
-        artifacts = findArtifacts(fileName)
+    members = Map.merge(getMembers(), getSelfMember())
 
-        data =
-          Enum.reduce(artifacts.artifacts, <<>>, fn artifact, currData ->
-            currData <> artifact.content
-          end)
+    children = [
+      {MemberApp.FileAcc, [members |> Map.keys(), newFilePath, getSystemKey()]}
+    ]
 
-        case ExCrypto.decrypt(getSystemKey(), artifacts.vector.content, data) do
-          {:ok, decData} ->
-            IO.binwrite(file, decData)
-        end
+    opts = [strategy: :one_for_one, name: MemberApp.FileAcc.Supervisor]
+    Supervisor.start_link(children, opts)
 
-        File.close(file)
-        Logger.info("File Created: #{newFilePath}")
-    end
+    members |> Map.values()
+    |> Enum.each(fn member ->
+      member.findArtifacts.(fileName, get_IP())
+    end)
+
+    # case File.open(newFilePath, [:binary, :write]) do
+    #   {:ok, file} ->
+    #     artifacts = findArtifacts(fileName)
+
+    #     data =
+    #       Enum.reduce(artifacts.artifacts, <<>>, fn artifact, currData ->
+    #         currData <> artifact.content
+    #       end)
+
+    #     case ExCrypto.decrypt(getSystemKey(), artifacts.vector.content, data) do
+    #       {:ok, decData} ->
+    #         IO.binwrite(file, decData)
+    #     end
+
+    #     File.close(file)
+    #     Logger.info("File Created: #{newFilePath}")
+    # end
+  end
+
+  def testMount do
+    mountFile("inputFile.txt", "./test/output.txt")
   end
 
   @doc """
@@ -232,7 +333,7 @@ defmodule FileManager do
 
   def getSelfMember do
     %{
-      UUID.uuid4() =>
+      get_IP() =>
         Member.new(%{
           :key => getSystemKey(),
           :addrs => get_IP(),
@@ -251,6 +352,6 @@ defmodule FileManager do
   end
 
   defp getRandomMember do
-    getMembersValues() |> Enum.random()
+    (getMembersValues() ++ (getSelfMember() |> Map.values())) |> Enum.random()
   end
 end

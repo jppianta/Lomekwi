@@ -2,7 +2,6 @@ defmodule MemberApp.Router do
   use Plug.Router
   use Plug.ErrorHandler
   use Plug.Debugger
-  require UUID
   require Logger
   plug(Plug.Logger, log: :debug)
 
@@ -15,16 +14,16 @@ defmodule MemberApp.Router do
 
     body = Jason.decode!(body)
 
-    key = UUID.uuid4()
+    addrs = Map.get(body, "addrs")
 
     config = %{
-      :addrs => Map.get(body, "addrs"),
+      :addrs => addrs,
       :base_dir => Map.get(body, "base_dir")
     }
 
     members = Map.merge(FileManager.getSelfMember(), FileManager.getMembers())
 
-    FileManager.new_member(key, config)
+    FileManager.new_member(addrs, config)
 
     send_resp(
       conn,
@@ -35,29 +34,48 @@ defmodule MemberApp.Router do
     )
   end
 
-  post "/new_member" do
-    {:ok, body, conn} = read_body(conn)
-
+  post "/find_artifact" do
+    {:ok, body, _req0} = read_body(conn)
     body = Jason.decode!(body)
 
-    key = UUID.uuid4()
+    FileManager.findArtifacts(Map.get(body, "fileName"), Map.get(body, "send_to"))
 
-    config = Map.merge(%{:addrs => "localhost"}, body)
-
-    FileManager.new_member(key, config)
-
-    send_resp(conn, 201, "created: #{get_in(body, ["message"])}")
+    send_resp(conn, 200, "FindingArtifacts")
   end
 
-  post "/save_artifact" do
-    Logger.info("Start Save Artifact")
-
+  post "/receive_artifact" do
     {:ok, body, _req0} = read_body(conn)
 
     artifact = %{
       :fileName => binary_part(body, 0, 32) |> parseName() |> to_string(),
       :slice => binary_part(body, 32, 16) |> parseName() |> parseSlice(),
-      :content => binary_part(body, 50, div(bit_size(body), 8) - 50)
+      :content => binary_part(body, 48, byte_size(body) - 48)
+    }
+
+    MemberApp.FileAcc.save_artifact(artifact)
+
+    send_resp(conn, 200, "Artifact Collected")
+  end
+
+  post "/sent_all_artifact" do
+    {:ok, body, conn} = read_body(conn)
+
+    body = Jason.decode!(body)
+
+    from = Map.get(body, "ip")
+
+    MemberApp.FileAcc.member_complete(from)
+
+    send_resp(conn, 200, "Artifact Collected")
+  end
+
+  post "/save_artifact" do
+    {:ok, body, _req0} = read_body(conn)
+
+    artifact = %{
+      :fileName => binary_part(body, 0, 32) |> parseName() |> to_string(),
+      :slice => binary_part(body, 32, 16) |> parseName() |> parseSlice(),
+      :content => binary_part(body, 48, byte_size(body) - 48)
     }
 
     FileManager.save_artifact(artifact)

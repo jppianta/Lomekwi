@@ -1,18 +1,19 @@
-# defmodule Mix.Tasks.PrepComponent do
-#   use Mix.Task
+defmodule Mix.Tasks.PrepComponent do
+  use Mix.Task
 
-#   @impl Mix.Task
-#   def run(_args) do
-#     File.rm_rf("./test/mock_components")
-#     File.rm_rf("./test/mock_files/*")
-#     filePath = "./test/mock_files/inputFile.txt"
+  @impl Mix.Task
+  def run(_args) do
+    File.rm_rf("./test/mock_components")
+    File.rm_rf("./test/mock_files/*")
+    File.mkdir_p("./test/mock_components/a/")
+    filePath = "./test/mock_components/a/inputFile.txt"
 
-#     File.write(
-#       filePath,
-#       Enum.reduce(1..10_000_000, "", fn _a, acc -> acc <> "Eu amo a Ianinha " end)
-#     )
-#   end
-# end
+    File.write(
+      filePath,
+      Enum.reduce(1..500_000, "", fn _a, acc -> acc <> "Eu amo a Ianinha " end)
+    )
+  end
+end
 
 # defmodule Mix.Tasks.CreateArtifacts do
 #   use Mix.Task

@@ -34,7 +34,6 @@ defmodule Lomekwi.MixProject do
       {:plug_cowboy, "~> 2.0"},
       {:plug, "~> 1.8"},
       {:jason, "~> 1.1"},
-      {:uuid, "~> 1.1"},
       {:poison, "~> 4.0"},
       {:httpoison, "~> 1.5"},
       {:binary, "~> 0.0.5"},
