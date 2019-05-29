@@ -10,6 +10,31 @@ defmodule MemberApp.Router do
 
   plug(:dispatch)
 
+  post "/join_system" do
+    {:ok, body, conn} = read_body(conn)
+
+    body = Jason.decode!(body)
+
+    key = UUID.uuid4()
+
+    config = %{
+      :addrs => Map.get(body, "addrs"),
+      :base_dir => Map.get(body, "base_dir")
+    }
+
+    members = Map.merge(FileManager.getSelfMember(), FileManager.getMembers())
+
+    FileManager.new_member(key, config)
+
+    send_resp(
+      conn,
+      200,
+      FileManager.getSystemKey() <>
+        <<0>> <>
+        to_string(FileManager.getArtifactSize()) <> <<0>> <> FileManager.getMembersInfo(members)
+    )
+  end
+
   post "/new_member" do
     {:ok, body, conn} = read_body(conn)
 

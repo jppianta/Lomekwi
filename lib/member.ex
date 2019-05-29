@@ -13,10 +13,11 @@ defmodule Member do
       {:error, "Key must be defined"}
     else
       %{
-        :splitFile => splitFile(config.key, config.artifactSize),
-        :findArtifacts => findArtifacts(config.baseDir),
+        :splitFile => splitFile(config.key, config.artifact_size),
+        :findArtifacts => findArtifacts(config.base_dir),
         :save_artifact => save_artifact(config.addrs),
-        :baseDir => config.baseDir
+        :base_dir => config.base_dir,
+        :addrs => config.addrs
       }
     end
   end
@@ -26,7 +27,7 @@ defmodule Member do
       message =
         encondeName(artifact.fileName, 32) <> encondeName(artifact.part, 16) <> artifact.content
 
-      case HTTPoison.post("localhost:8085/save_artifact", message, [], []) do
+      case HTTPoison.post(addrs <> ":8085/save_artifact", message) do
         {:ok, _conn} ->
           :ok
 

@@ -6,15 +6,24 @@ defmodule Lomekwi do
   use Agent
   require Logger
 
-  def init do
-    FileManager.new_system(%{:base_dir => "./test/mock_components/"})
-    start_server()
+  def new_system(config \\ %{}) do
+    start_server(8085)
+    FileManager.new_system(Map.merge(%{:base_dir => "./test/mock_components/a/"}, config))
   end
 
-  defp start_server() do
+  def join_system(system_member_ip, config \\ %{}) do
+    start_server(8085)
+
+    FileManager.join_system(
+      Map.merge(%{:base_dir => "./test/mock_components/"}, config),
+      system_member_ip
+    )
+  end
+
+  defp start_server(port_number) do
     # List all child processes to be supervised
     children = [
-      Plug.Cowboy.child_spec(scheme: :http, plug: MemberApp.Router, options: [port: 8085])
+      Plug.Cowboy.child_spec(scheme: :http, plug: MemberApp.Router, options: [port: port_number])
     ]
 
     opts = [strategy: :one_for_one, name: MemberApp.Supervisor]

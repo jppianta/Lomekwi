@@ -1,8 +1,8 @@
 defmodule LomekwiConfig do
   def config do
     %{
-      :baseDir => "./test/mock_components/",
-      :artifactSize => 256_000
+      :base_dir => "./test/mock_components/",
+      :artifact_size => 256_000
     }
   end
 end
