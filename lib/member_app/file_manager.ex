@@ -63,9 +63,8 @@ defmodule FileManager do
   end
 
   defp get_self_ip do
-    {:ok, req} = HTTPoison.get("https://api.ipify.org?format=json")
-    {:ok, data} = Jason.decode(req.body)
-    Map.get(data, "ip")
+    {:ok, ifs} = :inet.getif()
+    Enum.at(ifs, 0) |> elem(0) |> Tuple.to_list() |> Enum.join(".")
   end
 
   def save_artifact(artifact) do
