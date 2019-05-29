@@ -45,7 +45,7 @@ defmodule MemberApp.FileAcc do
     data = %{
       :vector => arts.vector,
       :artifacts =>
-        Enum.sort(arts.artifacts, &(String.to_integer(&1.slice) < String.to_integer(&2.slice)))
+        Enum.sort(arts.artifacts, &(&1.slice < &2.slice))
     }
 
     mountFile(data)
