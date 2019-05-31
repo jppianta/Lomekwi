@@ -36,6 +36,7 @@ defmodule Lomekwi.MixProject do
       {:jason, "~> 1.1"},
       {:poison, "~> 4.0"},
       {:httpoison, "~> 1.5"},
+      {:logger_file_backend, "~> 0.0.10"},
       {:binary, "~> 0.0.5"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false}
     ]

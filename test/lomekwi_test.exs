@@ -3,7 +3,7 @@ defmodule LomekwiTest do
   doctest Lomekwi
 
   defp mockComponentFolder do
-    "./test/mock_components/"
+    LomekwiConfig.config().baseDir
   end
 
   defp initMember do
@@ -26,7 +26,7 @@ defmodule LomekwiTest do
     member.splitFile.("inputFile.txt")
     data = MemberTest.findArtifacts("inputFile.txt", mockComponentFolder())
     assert data.vector != nil
-    assert length(data.artifacts) == 2
+    assert length(data.artifacts) > 0
     clearFiles()
   end
 

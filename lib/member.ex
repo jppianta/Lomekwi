@@ -2,11 +2,10 @@ defmodule Member do
   @moduledoc """
     Create intances to manage file and artifacts
   """
-
   require Logger
 
   @doc """
-    Instantiates a new Member exposing just splitFile and mountFile functions
+  Instantiates a new Member exposing just splitFile and mountFile functions
   """
   def new(config) do
     if config.key == nil do
@@ -26,13 +25,7 @@ defmodule Member do
       message =
         encondeName(artifact.fileName, 32) <> encondeName(artifact.part, 16) <> artifact.content
 
-      case HTTPoison.post(addrs <> ":8085/save_artifact", message) do
-        {:ok, _conn} ->
-          :ok
-
-        {:error, _conn} ->
-          :error
-      end
+      send_package(addrs <> ":8085/save_artifact", message)
     end
   end
 
@@ -53,43 +46,26 @@ defmodule Member do
   # List all artifacts of a fileName on a folder
   defp findArtifacts(addrs) do
     fn fileName, send_to ->
-      case HTTPoison.post(
-             addrs <> ":8085/find_artifact",
-             Jason.encode!(%{:fileName => fileName, :send_to => send_to})
-           ) do
-        {:ok, _conn} ->
-          :ok
-
-        {:error, _conn} ->
-          :error
-      end
+      send_package(
+        addrs <> ":8085/find_artifact",
+        Jason.encode!(%{:fileName => fileName, :send_to => send_to}),
+        "Find Artifact"
+      )
     end
+  end
 
-    # {:ok, files} = File.ls(baseDir)
+  defp send_package(destination, content, type \\ "") do
+    case HTTPoison.post(destination, content) do
+      {:ok, _conn} ->
+        if type != "" do
+          Logger.info("Package Sent: #{type}")
+        end
 
-    # Enum.reduce(files, %{:vector => nil, :artifacts => []}, fn file, currData ->
-    #   if not File.dir?(file) and artifact?(file) do
-    #     Logger.info("Artifact Found: #{file}")
-    #     artifact = getArtifactDetails(file, baseDir)
+        :ok
 
-    #     if artifact.fileName == fileName do
-    #       if artifact.slice === "vector" do
-    #         %{
-    #           :vector => artifact,
-    #           :artifacts => currData.artifacts
-    #         }
-    #       else
-    #         %{
-    #           :vector => currData.vector,
-    #           :artifacts => currData.artifacts ++ [artifact]
-    #         }
-    #       end
-    #     else
-    #       currData
-    #     end
-    #   else
-    #     currData
-    #   end
-    # end)
+      {:error, error} ->
+        Logger.error("Package Error: #{type}, #{error.reason}")
+        send_package(destination, content)
+    end
   end
 end
