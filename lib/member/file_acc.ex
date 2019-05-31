@@ -40,6 +40,8 @@ defmodule MemberApp.FileAcc do
   defp mountFile(artifacts) do
     case File.open(get_output_path(), [:binary, :write]) do
       {:ok, file} ->
+        Logger.info("Mounting Started")
+
         data =
           Enum.reduce(artifacts.artifacts, <<>>, fn artifact, currData ->
             currData <> artifact.content
@@ -51,7 +53,7 @@ defmodule MemberApp.FileAcc do
         end
 
         File.close(file)
-        Logger.info "Mount Completed"
+        Logger.info("Mounting Completed")
     end
   end
 
@@ -78,7 +80,7 @@ defmodule MemberApp.FileAcc do
     show_info()
 
     if read_all?() do
-      Logger.info("Read All")
+      Logger.info("Download Completed")
       create_file()
     end
   end
@@ -97,7 +99,7 @@ defmodule MemberApp.FileAcc do
         end
       end)
 
-    Logger.info("#{accepted / length(arts_list) * 100}%")
+    ProgressBar.render(accepted, length(arts_list), suffix: :count)
   end
 
   defp read_all? do
