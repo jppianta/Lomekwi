@@ -10,7 +10,7 @@ defmodule Mix.Tasks.PrepComponent do
 
     File.write(
       filePath,
-      Enum.reduce(1..500_000, "", fn _a, acc -> acc <> "Eu amo a Ianinha " end)
+      Enum.reduce(1..100_000_000, "", fn _a, acc -> acc <> "Eu amo a Ianinha " end)
     )
   end
 end

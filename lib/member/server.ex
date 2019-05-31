@@ -3,8 +3,6 @@ defmodule MemberApp.Router do
   use Plug.ErrorHandler
   use Plug.Debugger
   require Logger
-  plug(Plug.Logger, log: :debug)
-
   plug(:match)
 
   plug(:dispatch)
@@ -21,16 +19,17 @@ defmodule MemberApp.Router do
       :base_dir => Map.get(body, "base_dir")
     }
 
-    members = Map.merge(FileManager.getSelfMember(), FileManager.getMembers())
+    members = Map.merge(Lomekwi.Client.getSelfMember(), Lomekwi.Client.getMembers())
 
-    FileManager.new_member(addrs, config)
+    Lomekwi.Client.new_member(addrs, config)
 
     send_resp(
       conn,
       200,
-      FileManager.getSystemKey() <>
+      Lomekwi.Client.getSystemKey() <>
         <<0>> <>
-        to_string(FileManager.getArtifactSize()) <> <<0>> <> FileManager.getMembersInfo(members)
+        to_string(Lomekwi.Client.getArtifactSize()) <>
+        <<0>> <> Lomekwi.Client.getMembersInfo(members)
     )
   end
 
@@ -38,7 +37,7 @@ defmodule MemberApp.Router do
     {:ok, body, _req0} = read_body(conn)
     body = Jason.decode!(body)
 
-    FileManager.findArtifacts(Map.get(body, "fileName"), Map.get(body, "send_to"))
+    Lomekwi.FileManager.findArtifacts(Map.get(body, "fileName"), Map.get(body, "send_to"))
 
     send_resp(conn, 200, "FindingArtifacts")
   end
@@ -57,18 +56,6 @@ defmodule MemberApp.Router do
     send_resp(conn, 200, "Artifact Collected")
   end
 
-  post "/sent_all_artifact" do
-    {:ok, body, conn} = read_body(conn)
-
-    body = Jason.decode!(body)
-
-    from = Map.get(body, "ip")
-
-    MemberApp.FileAcc.member_complete(from)
-
-    send_resp(conn, 200, "Artifact Collected")
-  end
-
   post "/save_artifact" do
     {:ok, body, _req0} = read_body(conn)
 
@@ -78,7 +65,7 @@ defmodule MemberApp.Router do
       :content => binary_part(body, 48, byte_size(body) - 48)
     }
 
-    FileManager.save_artifact(artifact)
+    Lomekwi.FileManager.save_artifact(artifact)
     send_resp(conn, 404, "End Save Artifact")
   end
 
@@ -95,6 +82,7 @@ defmodule MemberApp.Router do
   end
 
   def handle_errors(conn, %{kind: _kind, reason: _reason, stack: _stack}) do
+    Logger.error("Package Error")
     send_resp(conn, conn.status, "Something went wrong")
   end
 

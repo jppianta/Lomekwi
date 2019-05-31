@@ -8,13 +8,13 @@ defmodule Lomekwi do
 
   def new_system(config \\ %{}) do
     start_server(8085)
-    FileManager.new_system(Map.merge(%{:base_dir => "./test/mock_components/a/"}, config))
+    Lomekwi.Client.new_system(Map.merge(%{:base_dir => "./test/mock_components/a/"}, config))
   end
 
   def join_system(system_member_ip, config \\ %{}, port \\ 8085) do
     start_server(port)
 
-    FileManager.join_system(
+    Lomekwi.Client.join_system(
       Map.merge(%{:base_dir => "./test/mock_components/"}, config),
       system_member_ip
     )
