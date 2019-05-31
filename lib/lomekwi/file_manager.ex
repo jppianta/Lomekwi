@@ -6,15 +6,18 @@ defmodule Lomekwi.FileManager do
   use Agent
   require Logger
 
+  # Client
   def start_link(config) do
     Agent.start_link(fn -> config end, name: __MODULE__)
   end
 
+  # Server
   def save_artifact(artifact) do
     path = get_base_dir() <> to_string(artifact.slice) <> "__" <> artifact.fileName <> ".ats"
     File.write(path, artifact.content)
   end
 
+  # Server
   def findArtifacts(fileName, send_to) do
     {:ok, files} = File.ls(get_base_dir())
 
@@ -23,7 +26,7 @@ defmodule Lomekwi.FileManager do
         artifact = getArtifactDetails(file, get_base_dir())
 
         if artifact.fileName == fileName and artifact.slice != "meta" do
-          # Logger.info("Artifact Found: #{file}")
+          Logger.info("Artifact Found: #{file}")
 
           message =
             encondeName(artifact.fileName, 32) <>
@@ -31,8 +34,7 @@ defmodule Lomekwi.FileManager do
 
           case HTTPoison.post(send_to <> ":8085/receive_artifact", message) do
             {:ok, _conn} ->
-              # Logger.info("Artifact Sent: #{file}")
-              :ok
+              Logger.info("Artifact Sent: #{file}")
 
             {:error, _conn} ->
               :error
@@ -40,8 +42,20 @@ defmodule Lomekwi.FileManager do
         end
       end
     end)
+
+    case HTTPoison.post(
+           send_to <> ":8085/sent_all_artifact",
+           Jason.encode!(%{:ip => get_IP()})
+         ) do
+      {:ok, _conn} ->
+        :ok
+
+      {:error, _conn} ->
+        :error
+    end
   end
 
+  # Server
   defp encondeName(name, size) do
     content = to_charlist(name)
 
@@ -57,11 +71,13 @@ defmodule Lomekwi.FileManager do
   end
 
   # Verifies if file is an artifact
+  # Server
   defp artifact?(file) do
     String.ends_with?(file, ".ats")
   end
 
   # Get slice, fileName and artifactName of an artifact
+  # Server
   defp getArtifactDetails(art, baseDir) do
     pattern = :binary.compile_pattern(["__", ".ats"])
     [slice | fileName] = String.split(art, pattern)
@@ -80,11 +96,13 @@ defmodule Lomekwi.FileManager do
     end
   end
 
-  def get_base_dir do
+  # Both
+  defp get_base_dir do
     Agent.get(__MODULE__, & &1.base_dir)
   end
 
-  def get_IP do
+  # Both
+  defp get_IP do
     Agent.get(__MODULE__, & &1.ip)
   end
 end
