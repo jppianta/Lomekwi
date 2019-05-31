@@ -8,9 +8,11 @@ defmodule MemberApp.FileAcc do
     system_key = Enum.at(opts, 2)
 
     Logger.info("Number of Artifacts: #{artifact_number}")
-    arts = Enum.reduce(1..artifact_number, {}, fn _i, acc ->
-      Tuple.append(acc, nil)
-    end)
+
+    arts =
+      Enum.reduce(1..artifact_number, {}, fn _i, acc ->
+        Tuple.append(acc, nil)
+      end)
 
     Agent.start_link(
       fn ->
@@ -84,21 +86,24 @@ defmodule MemberApp.FileAcc do
     arts_list =
       get_artifacts().artifacts
       |> Tuple.to_list()
-    accepted = Enum.reduce(arts_list, 0, fn i, acc ->
-      if i != nil do
-        acc + 1
-      else
-        acc
-      end
-    end)
-    Logger.info("#{(accepted / length(arts_list)) * 100}%")
+
+    accepted =
+      Enum.reduce(arts_list, 0, fn i, acc ->
+        if i != nil do
+          acc + 1
+        else
+          acc
+        end
+      end)
+
+    Logger.info("#{accepted / length(arts_list) * 100}%")
   end
 
   defp read_all? do
     get_artifacts().artifacts
     |> Tuple.to_list()
     |> Enum.reduce(true, fn val, acc ->
-      acc and (val != nil)
+      acc and val != nil
     end)
   end
 

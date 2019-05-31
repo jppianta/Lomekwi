@@ -7,6 +7,12 @@ defmodule Lomekwi do
   require Logger
 
   def new_system(config \\ %{}) do
+    Logger.add_backend({LoggerFileBackend, :info})
+
+    Logger.configure_backend({LoggerFileBackend, :info},
+      path: "./log/log.log"
+    )
+
     start_server(8085)
     Lomekwi.Client.new_system(Map.merge(%{:base_dir => "./test/mock_components/a/"}, config))
   end

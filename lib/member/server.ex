@@ -37,7 +37,11 @@ defmodule MemberApp.Router do
     {:ok, body, _req0} = read_body(conn)
     body = Jason.decode!(body)
 
-    Lomekwi.FileManager.findArtifacts(Map.get(body, "fileName"), Map.get(body, "send_to"))
+    Task.start(
+      fn ->
+        Lomekwi.FileManager.findArtifacts(Map.get(body, "fileName"), Map.get(body, "send_to"))
+      end
+    )
 
     send_resp(conn, 200, "FindingArtifacts")
   end
@@ -51,7 +55,11 @@ defmodule MemberApp.Router do
       :content => binary_part(body, 48, byte_size(body) - 48)
     }
 
-    MemberApp.FileAcc.save_artifact(artifact)
+    Task.start(
+      fn ->
+        MemberApp.FileAcc.save_artifact(artifact)
+      end
+    )
 
     send_resp(conn, 200, "Artifact Collected")
   end

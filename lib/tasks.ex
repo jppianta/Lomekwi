@@ -15,22 +15,16 @@ defmodule Mix.Tasks.PrepComponent do
   end
 end
 
-# defmodule Mix.Tasks.CreateArtifacts do
-#   use Mix.Task
+defmodule Mix.Tasks.TestBig do
+  use Mix.Task
 
-#   @impl Mix.Task
-#   def run(_args) do
-#     Lomekwi.init()
-#     Lomekwi.put("m1", %{:baseDir => "./test/mock_components/m1/"})
-#     Lomekwi.put("m2", %{:baseDir => "./test/mock_components/m2/"})
-#     Lomekwi.put("m3", %{:baseDir => "./test/mock_components/m3/"})
-#     Lomekwi.put("m4", %{:baseDir => "./test/mock_components/m4/"})
-#     Lomekwi.put("m5", %{:baseDir => "./test/mock_components/m5/"})
-#     Lomekwi.put("m6", %{:baseDir => "./test/mock_components/m6/"})
-#     Lomekwi.put("m7", %{:baseDir => "./test/mock_components/m7/"})
-#     Lomekwi.splitFile("m1", "inputFile.txt", "./test/mock_files/")
-#   end
-# end
+  @impl Mix.Task
+  def run(_args) do
+    Lomekwi.new_system()
+    Lomekwi.Client.splitFile("inputFile.txt")
+    Lomekwi.Client.mountFile("inputFile.txt", "./test/output.txt")
+  end
+end
 
 # defmodule Mix.Tasks.MountFile do
 #   use Mix.Task

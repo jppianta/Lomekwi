@@ -2,11 +2,10 @@ defmodule Member do
   @moduledoc """
     Create intances to manage file and artifacts
   """
-
   require Logger
 
   @doc """
-    Instantiates a new Member exposing just splitFile and mountFile functions
+  Instantiates a new Member exposing just splitFile and mountFile functions
   """
   def new(config) do
     if config.key == nil do
@@ -49,18 +48,23 @@ defmodule Member do
     fn fileName, send_to ->
       send_package(
         addrs <> ":8085/find_artifact",
-        Jason.encode!(%{:fileName => fileName, :send_to => send_to})
+        Jason.encode!(%{:fileName => fileName, :send_to => send_to}),
+        "Find Artifact"
       )
     end
   end
 
-  defp send_package(destination, content) do
+  defp send_package(destination, content, type \\ "") do
     case HTTPoison.post(destination, content) do
       {:ok, _conn} ->
+        if type != "" do
+          Logger.info("Package Sent: #{type}")
+        end
+
         :ok
 
       {:error, error} ->
-        Logger.error("Package Error: #{error.reason}")
+        Logger.error("Package Error: #{type}, #{error.reason}")
         send_package(destination, content)
     end
   end

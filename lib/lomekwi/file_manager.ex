@@ -26,32 +26,24 @@ defmodule Lomekwi.FileManager do
         artifact = getArtifactDetails(file, get_base_dir())
 
         if artifact.fileName == fileName and artifact.slice != "meta" do
-          Logger.info("Artifact Found: #{file}")
-
           message =
             encondeName(artifact.fileName, 32) <>
               encondeName(artifact.slice, 16) <> artifact.content
 
-          case HTTPoison.post(send_to <> ":8085/receive_artifact", message) do
-            {:ok, _conn} ->
-              Logger.info("Artifact Sent: #{file}")
-
-            {:error, _conn} ->
-              :error
-          end
+          send_package(send_to <> ":8085/receive_artifact", message, "Receive Artifact")
         end
       end
     end)
+  end
 
-    case HTTPoison.post(
-           send_to <> ":8085/sent_all_artifact",
-           Jason.encode!(%{:ip => get_IP()})
-         ) do
+  defp send_package(destination, content, type \\ "") do
+    case HTTPoison.post(destination, content) do
       {:ok, _conn} ->
         :ok
 
-      {:error, _conn} ->
-        :error
+      {:error, error} ->
+        Logger.error("Package Error: #{type}, #{error.reason}")
+        send_package(destination, content)
     end
   end
 
@@ -99,10 +91,5 @@ defmodule Lomekwi.FileManager do
   # Both
   defp get_base_dir do
     Agent.get(__MODULE__, & &1.base_dir)
-  end
-
-  # Both
-  defp get_IP do
-    Agent.get(__MODULE__, & &1.ip)
   end
 end
