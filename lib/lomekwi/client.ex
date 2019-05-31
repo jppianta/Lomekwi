@@ -98,8 +98,9 @@ defmodule Lomekwi.Client do
   """
   # Client
   def splitFile(fileName, baseDir \\ get_base_dir()) do
-    Enum.each(split(fileName, baseDir), fn artifact ->
-      createArtifact(artifact)
+    Enum.reduce(split(fileName, baseDir), 0, fn artifact, acc ->
+      createArtifact(artifact, acc)
+      (acc + 1) |> Integer.mod(length(get_all_member_values()))
     end)
   end
 
@@ -126,7 +127,7 @@ defmodule Lomekwi.Client do
   defp create_metadata(fileName, info) do
     meta = %{:fileName => fileName, :content => Jason.encode!(info), :part => "meta"}
 
-    (getMembersValues() ++ (getSelfMember() |> Map.values()))
+    get_all_member_values()
     |> Enum.each(fn member ->
       member.save_artifact.(meta)
     end)
@@ -180,8 +181,13 @@ defmodule Lomekwi.Client do
   end
 
   # Client
-  defp createArtifact(artifact) do
-    getRandomMember().save_artifact.(artifact)
+  defp createArtifact(artifact, to) do
+    member = get_all_member_values() |> Enum.at(to)
+    Task.start(
+      fn ->
+        member.save_artifact.(artifact)
+      end
+    )
   end
 
   defp createDir(dir) do
@@ -255,6 +261,10 @@ defmodule Lomekwi.Client do
 
   # Client
   defp getRandomMember do
-    (getMembersValues() ++ (getSelfMember() |> Map.values())) |> Enum.random()
+    get_all_member_values() |> Enum.random()
+  end
+
+  defp get_all_member_values do
+    (getMembersValues() ++ (getSelfMember() |> Map.values()))
   end
 end

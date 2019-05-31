@@ -51,6 +51,7 @@ defmodule MemberApp.FileAcc do
         end
 
         File.close(file)
+        Logger.info "Mount Completed"
     end
   end
 
