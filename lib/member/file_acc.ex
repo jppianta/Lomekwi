@@ -40,7 +40,8 @@ defmodule MemberApp.FileAcc do
   defp mountFile(artifacts) do
     case File.open(get_output_path(), [:binary, :write]) do
       {:ok, file} ->
-        Logger.info "Mounting Started"
+        Logger.info("Mounting Started")
+
         data =
           Enum.reduce(artifacts.artifacts, <<>>, fn artifact, currData ->
             currData <> artifact.content
@@ -52,7 +53,7 @@ defmodule MemberApp.FileAcc do
         end
 
         File.close(file)
-        Logger.info "Mounting Completed"
+        Logger.info("Mounting Completed")
     end
   end
 

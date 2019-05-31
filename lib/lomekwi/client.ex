@@ -98,17 +98,19 @@ defmodule Lomekwi.Client do
   """
   # Client
   def splitFile(fileName, baseDir \\ get_base_dir()) do
-    Logger.info "Spliting File: #{fileName}"
+    Logger.info("Spliting File: #{fileName}")
     arts = split(fileName, baseDir)
-    Logger.info "Spliting Completed"
-    Logger.info "Uploading File"
+    Logger.info("Spliting Completed")
+    Logger.info("Uploading File")
+
     Enum.reduce(arts, {0, 1}, fn artifact, acc ->
       createArtifact(artifact, elem(acc, 0))
       turn = (elem(acc, 0) + 1) |> Integer.mod(length(get_all_member_values()))
       ProgressBar.render(elem(acc, 1), length(arts), suffix: :count)
       {turn, elem(acc, 1) + 1}
     end)
-    Logger.info "Uploading Completed"
+
+    Logger.info("Uploading Completed")
   end
 
   # Client
@@ -175,7 +177,7 @@ defmodule Lomekwi.Client do
     opts = [strategy: :one_for_one, name: MemberApp.FileAcc.Supervisor]
     Supervisor.start_link(children, opts)
 
-    Logger.info "Downloading Artifacts"
+    Logger.info("Downloading Artifacts")
 
     members
     |> Map.values()
@@ -192,11 +194,7 @@ defmodule Lomekwi.Client do
   # Client
   defp createArtifact(artifact, to) do
     member = get_all_member_values() |> Enum.at(to)
-    Task.start(
-      fn ->
-        member.save_artifact.(artifact)
-      end
-    )
+    member.save_artifact.(artifact)
   end
 
   defp createDir(dir) do
@@ -274,6 +272,6 @@ defmodule Lomekwi.Client do
   # end
 
   defp get_all_member_values do
-    (getMembersValues() ++ (getSelfMember() |> Map.values()))
+    getMembersValues() ++ (getSelfMember() |> Map.values())
   end
 end
