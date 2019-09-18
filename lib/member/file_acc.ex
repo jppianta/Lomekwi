@@ -40,20 +40,19 @@ defmodule MemberApp.FileAcc do
   defp mountFile(artifacts) do
     case File.open(get_output_path(), [:binary, :write]) do
       {:ok, file} ->
-        Logger.info("Mounting Started")
-
-        data =
-          Enum.reduce(artifacts.artifacts, <<>>, fn artifact, currData ->
-            currData <> artifact.content
-          end)
-
-        case ExCrypto.decrypt(get_system_key(), artifacts.vector.content, data) do
-          {:ok, decData} ->
-            IO.binwrite(file, decData)
-        end
-
-        File.close(file)
-        Logger.info("Mounting Completed")
+        Utils.Loader.mount_load(get_output_path(), fn ->
+          data =
+            Enum.reduce(artifacts.artifacts, <<>>, fn artifact, currData ->
+              currData <> artifact.content
+            end)
+  
+          case ExCrypto.decrypt(get_system_key(), artifacts.vector.content, data) do
+            {:ok, decData} ->
+              IO.binwrite(file, decData)
+          end
+  
+          File.close(file)
+        end)
     end
   end
 
@@ -80,7 +79,7 @@ defmodule MemberApp.FileAcc do
     show_info()
 
     if read_all?() do
-      Logger.info("Download Completed")
+      IO.puts "Download Complete 👌"
       create_file()
     end
   end
@@ -99,7 +98,7 @@ defmodule MemberApp.FileAcc do
         end
       end)
 
-    ProgressBar.render(accepted, length(arts_list), suffix: :count)
+    Utils.Loader.download_progress(accepted, length(arts_list))
   end
 
   defp read_all? do

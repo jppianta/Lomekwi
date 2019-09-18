@@ -3,7 +3,7 @@ defmodule LomekwiTest do
   doctest Lomekwi
 
   defp mockComponentFolder do
-    LomekwiConfig.config().baseDir
+    LomekwiConfig.config().base_dir
   end
 
   defp initMember do

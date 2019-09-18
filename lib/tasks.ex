@@ -21,8 +21,8 @@ defmodule Mix.Tasks.TestBig do
   @impl Mix.Task
   def run(_args) do
     Lomekwi.new_system()
-    Lomekwi.Client.splitFile("inputFile.txt")
-    Lomekwi.Client.mountFile("inputFile.txt", "./test/output.txt")
+    Lomekwi.Client.splitFile("inputFile.txt", "./test/mock_components/a/")
+    Lomekwi.Client.mountFile("inputFile.txt", "./test/mock_components/output.txt")
   end
 end
 

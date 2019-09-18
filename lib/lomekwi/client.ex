@@ -98,39 +98,38 @@ defmodule Lomekwi.Client do
   """
   # Client
   def splitFile(fileName, baseDir \\ get_base_dir()) do
-    Logger.info("Spliting File: #{fileName}")
     arts = split(fileName, baseDir)
-    Logger.info("Spliting Completed")
-    Logger.info("Uploading File")
 
+    IO.puts "Uploading #{fileName}"
     Enum.reduce(arts, {0, 1}, fn artifact, acc ->
       createArtifact(artifact, elem(acc, 0))
       turn = (elem(acc, 0) + 1) |> Integer.mod(length(get_all_member_values()))
-      ProgressBar.render(elem(acc, 1), length(arts), suffix: :count)
+      Utils.Loader.upload_progress(elem(acc, 1), length(arts))
       {turn, elem(acc, 1) + 1}
     end)
-
-    Logger.info("Uploading Completed")
+    IO.puts "Upload Complete 👌"
   end
 
   # Client
   defp split(fileName, baseDir) do
-    filePath = baseDir <> fileName
-    {:ok, file} = File.open(filePath, [:binary, :read])
-    data = IO.binread(file, :all)
-    File.close(file)
-    {:ok, {init_vector, cipher_text}} = ExCrypto.encrypt(getSystemKey(), data)
-    size = byte_size(cipher_text)
-    parts = div(size, getArtifactSize())
-    rest = rem(size, getArtifactSize())
-
-    artifacts =
-      splitParts(parts, cipher_text, fileName) ++
-        splitRest(rest, cipher_text, fileName, size, parts)
-
-    create_metadata(fileName, %{:artifact_number => length(artifacts)})
-
-    artifacts ++ [%{:fileName => fileName, :content => init_vector, :part => "vector"}]
+    Utils.Loader.split_load(fileName, fn ->
+      filePath = baseDir <> fileName
+      {:ok, file} = File.open(filePath, [:binary, :read])
+      data = IO.binread(file, :all)
+      File.close(file)
+      {:ok, {init_vector, cipher_text}} = ExCrypto.encrypt(getSystemKey(), data)
+      size = byte_size(cipher_text)
+      parts = div(size, getArtifactSize())
+      rest = rem(size, getArtifactSize())
+  
+      artifacts =
+        splitParts(parts, cipher_text, fileName) ++
+          splitRest(rest, cipher_text, fileName, size, parts)
+  
+      create_metadata(fileName, %{:artifact_number => length(artifacts)})
+  
+      artifacts ++ [%{:fileName => fileName, :content => init_vector, :part => "vector"}]
+    end)
   end
 
   defp create_metadata(fileName, info) do
@@ -147,6 +146,7 @@ defmodule Lomekwi.Client do
     if parts > 0 do
       Enum.map(0..(parts - 1), fn part ->
         partData = binary_part(content, part * getArtifactSize(), getArtifactSize())
+        Utils.Loader.split_progress(part, parts)
         %{:fileName => fileName, :content => partData, :part => to_string(part)}
       end)
     else
@@ -158,8 +158,10 @@ defmodule Lomekwi.Client do
   defp splitRest(rest, content, fileName, size, part) do
     if rest > 0 do
       partData = binary_part(content, size - rest, rest)
+      Utils.Loader.split_progress(part, part)
       [%{:fileName => fileName, :content => partData, :part => to_string(part)}]
     else
+      Utils.Loader.split_progress(part, part)
       []
     end
   end
@@ -177,7 +179,7 @@ defmodule Lomekwi.Client do
     opts = [strategy: :one_for_one, name: MemberApp.FileAcc.Supervisor]
     Supervisor.start_link(children, opts)
 
-    Logger.info("Downloading Artifacts")
+    IO.puts "Downloading #{fileName}"
 
     members
     |> Map.values()
