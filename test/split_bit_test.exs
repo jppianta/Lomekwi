@@ -1,13 +1,13 @@
-defmodule LomekwiTest do
+defmodule SplitBitTest do
   use ExUnit.Case, async: true
-  doctest Lomekwi
+  doctest SplitBit
 
   defp mockComponentFolder do
-    LomekwiConfig.config().base_dir
+    SplitBitConfig.config().base_dir
   end
 
   defp initMember do
-    Lomekwi.init(%{})
+    SplitBit.init(%{})
   end
 
   defp clearFiles do

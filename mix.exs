@@ -1,4 +1,4 @@
-defmodule Lomekwi.MixProject do
+defmodule SplitBit.MixProject do
   use Mix.Project
 
   def project do
@@ -9,11 +9,11 @@ defmodule Lomekwi.MixProject do
       start_permanent: Mix.env() == :prod,
       test_coverage: [tool: CoverModule],
       deps: deps(),
-      name: "Lomekwi",
-      source_url: "https://github.com/jppianta/Lomekwi",
+      name: "SplitBit",
+      source_url: "https://github.com/jppianta/SplitBit",
       docs: [
         # The main page in the docs
-        main: "Lomekwi",
+        main: "SplitBit",
         logo: "assets/lomekwi_no_name.png",
         extras: ["README.md"]
       ]

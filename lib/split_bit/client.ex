@@ -1,4 +1,4 @@
-defmodule Lomekwi.Client do
+defmodule SplitBit.Client do
   use Agent
   require Logger
 
@@ -38,7 +38,7 @@ defmodule Lomekwi.Client do
   end
 
   def new_member(key, config) do
-    conf = Map.merge(LomekwiConfig.config(), config)
+    conf = Map.merge(SplitBitConfig.config(), config)
     conf = Map.merge(conf, %{:key => getSystemKey()})
     Logger.info("Member Added: #{key}")
     createDir(conf.base_dir)
@@ -81,9 +81,9 @@ defmodule Lomekwi.Client do
   end
 
   defp init_file_manager(config) do
-    children = [{Lomekwi.FileManager, %{:base_dir => config.base_dir, :ip => config.ip}}]
+    children = [{SplitBit.FileManager, %{:base_dir => config.base_dir, :ip => config.ip}}]
 
-    opts = [strategy: :one_for_one, name: Lomekwi.FileManager.Supervisor]
+    opts = [strategy: :one_for_one, name: SplitBit.FileManager.Supervisor]
     Supervisor.start_link(children, opts)
   end
 

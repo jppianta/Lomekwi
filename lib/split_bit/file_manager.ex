@@ -1,4 +1,4 @@
-defmodule Lomekwi.FileManager do
+defmodule SplitBit.FileManager do
   @moduledoc """
     Manages Key and Member constructions
   """

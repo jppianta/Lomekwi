@@ -19,17 +19,17 @@ defmodule MemberApp.Router do
       :base_dir => Map.get(body, "base_dir")
     }
 
-    members = Map.merge(Lomekwi.Client.getSelfMember(), Lomekwi.Client.getMembers())
+    members = Map.merge(SplitBit.Client.getSelfMember(), SplitBit.Client.getMembers())
 
-    Lomekwi.Client.new_member(addrs, config)
+    SplitBit.Client.new_member(addrs, config)
 
     send_resp(
       conn,
       200,
-      Lomekwi.Client.getSystemKey() <>
+      SplitBit.Client.getSystemKey() <>
         <<0>> <>
-        to_string(Lomekwi.Client.getArtifactSize()) <>
-        <<0>> <> Lomekwi.Client.getMembersInfo(members)
+        to_string(SplitBit.Client.getArtifactSize()) <>
+        <<0>> <> SplitBit.Client.getMembersInfo(members)
     )
   end
 
@@ -38,7 +38,7 @@ defmodule MemberApp.Router do
     body = Jason.decode!(body)
 
     Task.start(fn ->
-      Lomekwi.FileManager.findArtifacts(Map.get(body, "fileName"), Map.get(body, "send_to"))
+      SplitBit.FileManager.findArtifacts(Map.get(body, "fileName"), Map.get(body, "send_to"))
     end)
 
     send_resp(conn, 200, "FindingArtifacts")
@@ -70,7 +70,7 @@ defmodule MemberApp.Router do
         :content => binary_part(body, 48, byte_size(body) - 48)
       }
 
-      Lomekwi.FileManager.save_artifact(artifact)
+      SplitBit.FileManager.save_artifact(artifact)
     end)
 
     send_resp(conn, 404, "End Save Artifact")

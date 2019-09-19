@@ -1,4 +1,4 @@
-defmodule LomekwiConfig do
+defmodule SplitBitConfig do
   def config do
     %{
       :base_dir => "./test/mock_components/",

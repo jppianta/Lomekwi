@@ -1,4 +1,4 @@
-defmodule Lomekwi do
+defmodule SplitBit do
   @moduledoc """
     Manages Key and Member constructions
   """
@@ -14,13 +14,13 @@ defmodule Lomekwi do
     )
 
     start_server(8085)
-    Lomekwi.Client.new_system(Map.merge(%{:base_dir => "./test/mock_components/a/"}, config))
+    SplitBit.Client.new_system(Map.merge(%{:base_dir => "./test/mock_components/a/"}, config))
   end
 
   def join_system(system_member_ip, config \\ %{}, port \\ 8085) do
     start_server(port)
 
-    Lomekwi.Client.join_system(
+    SplitBit.Client.join_system(
       Map.merge(%{:base_dir => "./test/mock_components/"}, config),
       system_member_ip
     )

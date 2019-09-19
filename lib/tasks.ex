@@ -20,9 +20,9 @@ defmodule Mix.Tasks.TestBig do
 
   @impl Mix.Task
   def run(_args) do
-    Lomekwi.new_system()
-    Lomekwi.Client.splitFile("inputFile.txt", "./test/mock_components/a/")
-    Lomekwi.Client.mountFile("inputFile.txt", "./test/mock_components/output.txt")
+    SplitBit.new_system()
+    SplitBit.Client.splitFile("inputFile.txt", "./test/mock_components/a/")
+    SplitBit.Client.mountFile("inputFile.txt", "./test/mock_components/output.txt")
   end
 end
 
@@ -31,16 +31,16 @@ end
 
 #   @impl Mix.Task
 #   def run(_args) do
-#     Lomekwi.init()
-#     Lomekwi.put("m1", %{:baseDir => "./test/mock_components/m1/"})
-#     Lomekwi.put("m2", %{:baseDir => "./test/mock_components/m2/"})
-#     Lomekwi.put("m3", %{:baseDir => "./test/mock_components/m3/"})
-#     Lomekwi.put("m4", %{:baseDir => "./test/mock_components/m4/"})
-#     Lomekwi.put("m5", %{:baseDir => "./test/mock_components/m5/"})
-#     Lomekwi.put("m6", %{:baseDir => "./test/mock_components/m6/"})
-#     Lomekwi.put("m7", %{:baseDir => "./test/mock_components/m7/"})
-#     Lomekwi.splitFile("m1", "inputFile.txt", "./test/mock_files/")
-#     IO.inspect(Lomekwi.mountFile("inputFile.txt", "./test/mock_components/inputFile.txt"))
+#     SplitBit.init()
+#     SplitBit.put("m1", %{:baseDir => "./test/mock_components/m1/"})
+#     SplitBit.put("m2", %{:baseDir => "./test/mock_components/m2/"})
+#     SplitBit.put("m3", %{:baseDir => "./test/mock_components/m3/"})
+#     SplitBit.put("m4", %{:baseDir => "./test/mock_components/m4/"})
+#     SplitBit.put("m5", %{:baseDir => "./test/mock_components/m5/"})
+#     SplitBit.put("m6", %{:baseDir => "./test/mock_components/m6/"})
+#     SplitBit.put("m7", %{:baseDir => "./test/mock_components/m7/"})
+#     SplitBit.splitFile("m1", "inputFile.txt", "./test/mock_files/")
+#     IO.inspect(SplitBit.mountFile("inputFile.txt", "./test/mock_components/inputFile.txt"))
 #   end
 # end
 
